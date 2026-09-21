@@ -6,27 +6,29 @@
   body { margin:0; padding:14px 16px; background:#2d2d2d; color:#d8d8d8;
          font:13px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
   .field { margin-bottom:13px; }
-  .row { display:flex; gap:12px; }
-  .row .field { flex:1; }
+  .row { display:flex; gap:10px; }
+  .row .field { flex:1; margin-bottom:0; }
   label { display:block; margin-bottom:4px; color:#9aa4ae; font-size:12px; }
-  input { width:100%; box-sizing:border-box; padding:6px 8px; background:#3d3d3d;
+  input, select { width:100%; box-sizing:border-box; padding:6px 8px; background:#3d3d3d;
           color:#e8e8e8; border:1px solid #4a4a4a; border-radius:4px; font:inherit; }
-  input:focus { outline:none; border-color:#77a8d9; }
+  input:focus, select:focus { outline:none; border-color:#77a8d9; }
   .hint { color:#7d868f; font-size:11px; margin-top:5px; }
-  .result { margin-top:6px; font-size:12px; }
-  .ok { color:#7fc99b; }
-  .bad { color:#e08b84; }
+  .result { margin-top:8px; font-size:12px; color:#7fc99b; min-height:1.4em; }
 </style>
 
 <div class="field">
-  <label for="date">Date</label>
-  <input id="date" type="date">
+  <label>Date</label>
+  <div class="row">
+    <div class="field"><select id="y"></select></div>
+    <div class="field"><select id="m"></select></div>
+    <div class="field"><select id="d"></select></div>
+  </div>
   <div class="result" id="result"></div>
 </div>
 
 <div class="field">
   <label for="name">Label on the key <span style="color:#6b737b">(optional)</span></label>
-  <input id="name" maxlength="14" placeholder="">
+  <input id="name" maxlength="14">
   <div class="hint">Shown above the number. Leave it empty for just the number.</div>
 </div>
 
@@ -43,8 +45,14 @@
 <div class="hint" id="nearHint">The key turns amber once the date is this close.</div>
 
 <script>
+  // 日付は3つの選択で入れる。
+  // <input type="date"> のネイティブなカレンダーは、この設定画面が載っている
+  // WebView（Qt）で Stream Deck アプリごと落とすため使わない。
   const DEFAULTS = { date: '', name: '', label: '', nearWithin: 7 };
   let ws = null, uuid = null, settings = { ...DEFAULTS }, isUntil = true;
+
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2, '0');
 
   const save = () => {
     if (ws && ws.readyState === 1) {
@@ -52,30 +60,65 @@
     }
   };
 
-  // 入れた日付が何日になるかを、その場で出す。保存する前に確かめられる
+  /** その年月の日数。うるう年も見る */
+  const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+
+  const fillDays = () => {
+    const y = Number($('y').value), m = Number($('m').value);
+    const max = daysInMonth(y, m);
+    const keep = Number($('d').value) || 1;
+    $('d').innerHTML = '';
+    for (let i = 1; i <= max; i += 1) {
+      $('d').insertAdjacentHTML('beforeend',
+        `<option value="${i}">${i}</option>`);
+    }
+    $('d').value = String(Math.min(keep, max));   // 31日→2月で溢れないように詰める
+  };
+
+  const syncFromInputs = () => {
+    settings.date = `${$('y').value}-${pad($('m').value)}-${pad($('d').value)}`;
+    preview();
+    save();
+  };
+
+  /** 入れた日付が何日になるかを、その場で出す */
   const preview = () => {
-    const el = document.getElementById('result');
     const m = String(settings.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (!m) { el.textContent = ''; el.className = 'result'; return; }
+    if (!m) { $('result').textContent = ''; return; }
     const [, y, mo, d] = m.map(Number);
     const target = new Date(y, mo - 1, d, 12);
     const today = new Date(); today.setHours(12, 0, 0, 0);
     const diff = Math.round((target - today) / 86400000);
-    if (diff === 0) { el.textContent = 'That is today.'; el.className = 'result ok'; return; }
-    if (isUntil) {
-      el.textContent = diff > 0 ? `${diff} days left.` : `${-diff} days ago.`;
-    } else {
-      el.textContent = diff < 0 ? `${-diff} days so far.` : `Starts in ${diff} days.`;
-    }
-    el.className = 'result ok';
+    if (diff === 0) { $('result').textContent = 'That is today.'; return; }
+    $('result').textContent = isUntil
+      ? (diff > 0 ? `${diff} days left.` : `${-diff} days ago.`)
+      : (diff < 0 ? `${-diff} days so far.` : `Starts in ${diff} days.`);
   };
 
-  for (const f of Object.keys(DEFAULTS)) {
-    const el = document.getElementById(f);
-    if (!el) continue;
-    el.addEventListener('input', (e) => {
-      settings[f] = el.type === 'number' ? Number(e.target.value) : e.target.value;
-      if (f === 'date') preview();
+  const buildSelects = () => {
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    for (let y = thisYear - 20; y <= thisYear + 20; y += 1) {
+      $('y').insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+    }
+    const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    months.forEach((label, i) => {
+      $('m').insertAdjacentHTML('beforeend', `<option value="${i + 1}">${label}</option>`);
+    });
+    $('y').value = String(thisYear);
+    $('m').value = String(now.getMonth() + 1);
+    fillDays();
+    $('d').value = String(now.getDate());
+  };
+
+  for (const id of ['y', 'm']) {
+    $(id).addEventListener('change', () => { fillDays(); syncFromInputs(); });
+  }
+  $('d').addEventListener('change', syncFromInputs);
+
+  for (const f of ['name', 'label', 'nearWithin']) {
+    $(f).addEventListener('input', (e) => {
+      settings[f] = $(f).type === 'number' ? Number(e.target.value) : e.target.value;
       save();
     });
   }
@@ -87,20 +130,30 @@
       settings = { ...DEFAULTS, ...(parsed.payload?.settings ?? {}) };
       isUntil = String(parsed.action ?? '').endsWith('.until');
     } catch {}
-    // 「から」には期限という概念が無いので、その欄は出さない
-    if (!isUntil) {
-      document.getElementById('nearField').style.display = 'none';
-      document.getElementById('nearHint').style.display = 'none';
-      document.getElementById('label').placeholder = 'DAYS';
+
+    if (!isUntil) {   // 「から」には期限という概念が無い
+      $('nearField').style.display = 'none';
+      $('nearHint').style.display = 'none';
+      $('label').placeholder = 'DAYS';
     }
+
+    buildSelects();
+    const saved = String(settings.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (saved) {
+      $('y').value = String(Number(saved[1]));
+      $('m').value = String(Number(saved[2]));
+      fillDays();
+      $('d').value = String(Number(saved[3]));
+    } else {
+      syncFromInputs();   // 未設定なら今日を入れておく。空のまま閉じられるより親切
+    }
+
     ws = new WebSocket('ws://127.0.0.1:' + port);
     ws.onopen = () => {
       ws.send(JSON.stringify({ event: registerEvent, uuid: piUUID }));
-      for (const f of Object.keys(DEFAULTS)) {
-        const el = document.getElementById(f);
-        if (el) el.value = settings[f] ?? DEFAULTS[f];
-      }
+      for (const f of ['name', 'label', 'nearWithin']) $(f).value = settings[f] ?? DEFAULTS[f];
       preview();
+      save();
     };
   };
 </script>
