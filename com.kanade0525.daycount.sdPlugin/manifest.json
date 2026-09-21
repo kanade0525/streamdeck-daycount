@@ -10,11 +10,17 @@
   "Icon": "imgs/plugin",
   "URL": "https://github.com/kanade0525/streamdeck-daycount",
   "CodePath": "bin/plugin.js",
-  "Nodejs": { "Version": "20" },
-  "Software": { "MinimumVersion": "6.9" },
+  "Nodejs": {
+    "Version": "20"
+  },
+  "Software": {
+    "MinimumVersion": "6.9"
+  },
   "OS": [
-    { "Platform": "mac", "MinimumVersion": "12" },
-    { "Platform": "windows", "MinimumVersion": "10" }
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    }
   ],
   "Actions": [
     {
@@ -22,20 +28,34 @@
       "Name": "Days until",
       "Icon": "imgs/action",
       "Tooltip": "Counts down the days to a date you choose.",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "DisableAutomaticStates": true,
       "PropertyInspectorPath": "ui/day.html",
-      "States": [{ "Image": "imgs/key", "TitleAlignment": "middle" }]
+      "States": [
+        {
+          "Image": "imgs/key",
+          "TitleAlignment": "middle"
+        }
+      ]
     },
     {
       "UUID": "com.kanade0525.daycount.since",
       "Name": "Days since",
       "Icon": "imgs/action",
       "Tooltip": "Counts the days since a date you choose.",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "DisableAutomaticStates": true,
       "PropertyInspectorPath": "ui/day.html",
-      "States": [{ "Image": "imgs/key", "TitleAlignment": "middle" }]
+      "States": [
+        {
+          "Image": "imgs/key",
+          "TitleAlignment": "middle"
+        }
+      ]
     }
   ]
 }
