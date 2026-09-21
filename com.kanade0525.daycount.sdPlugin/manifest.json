@@ -2,7 +2,7 @@
   "SDKVersion": 3,
   "UUID": "com.kanade0525.daycount",
   "Name": "Day Count",
-  "Version": "0.1.0.0",
+  "Version": "0.2.0.0",
   "Author": "kanade ishida",
   "Description": "Counts the days to a date you choose, or the days since one. Set a date and the key does the rest.",
   "Category": "Day Count",

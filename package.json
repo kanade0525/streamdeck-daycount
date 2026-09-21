@@ -1,6 +1,6 @@
 {
   "name": "streamdeck-daycount",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "任意の日付までの残り日数と、そこからの経過日数をキーに出す",
   "type": "module",
