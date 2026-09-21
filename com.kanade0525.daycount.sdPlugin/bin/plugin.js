@@ -14,11 +14,16 @@ import { RateLimiter } from './rate-limit.js';
 const logger = streamDeck.logger;
 const TICK_MS = 60_000;   // 1分ごとに確かめる
 
+// 数え直しは記録が消える操作なので、短い押下では絶対に起こさない。
+// 押している間は進み具合をキーに出して、指を離せば止められるようにする
+const RESET_HOLD_MS = 2000;
+
 const DEFAULTS = {
   date: '',
   name: '',
   label: '',            // 空なら状態に応じて決める
   nearWithin: 7,        // 何日前から色を変えるか（まで、のみ）
+  resetOnHold: true,    // 長押しで今日から数え直す（から、のみ）
   count: COUNT.calendar,// 暦の日数か、営業日か
   skipHolidays: false,  // 営業日のとき、日本の祝日も飛ばすか
 };
@@ -54,6 +59,7 @@ const render = (entry) => {
     state,
     label: labelFor(count.state, entry.mode, s.label, counting),
     name: s.name,
+    holding: entry.holdingSince ? (Date.now() - entry.holdingSince) / RESET_HOLD_MS : 0,
   });
 };
 
@@ -94,10 +100,38 @@ class DayAction extends SingletonAction {
   onDidReceiveSettings(ev) { this.#upsert(ev); }
   onWillDisappear(ev) { keys.delete(ev.action.id); }
 
-  onKeyUp(ev) {
-    // 押しても何も起きない。日付を消す操作を割り当てると、事故で消える
+  /** 長押しで数え直せるキーか。「から数える」で、設定が入っているときだけ */
+  #canReset(entry) {
+    return entry.mode === MODE.since && entry.settings.resetOnHold !== false;
+  }
+
+  onKeyDown(ev) {
     const entry = keys.get(ev.action.id);
-    if (entry) paint(entry);
+    if (!entry || !this.#canReset(entry)) return;
+    // 押している間、進み具合を出す。指を離せば止められることが見て分かる
+    entry.holdingSince = Date.now();
+    entry.holdTimer = setInterval(() => paint(entry), 100);
+    paint(entry);
+  }
+
+  onKeyUp(ev) {
+    const entry = keys.get(ev.action.id);
+    if (!entry) return;
+    if (!this.#canReset(entry)) { paint(entry); return; }
+
+    clearInterval(entry.holdTimer);
+    const held = entry.holdingSince ? Date.now() - entry.holdingSince : 0;
+    entry.holdingSince = 0;
+
+    if (held < RESET_HOLD_MS) { paint(entry); return; }   // 短い押下では何も起きない
+
+    const today = new Date();
+    const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+      + `-${String(today.getDate()).padStart(2, '0')}`;
+    entry.settings = { ...entry.settings, date };
+    ev.action.setSettings(entry.settings);
+    logger.info(`今日から数え直した（${date}）`);
+    paint(entry);
   }
 }
 

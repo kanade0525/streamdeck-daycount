@@ -141,3 +141,22 @@ test('当日はどちらでも合う', async () => {
     assert.equal(isSensible(at(2026, 3, 1), mode, at(2026, 3, 1, 18)), true);
   }
 });
+
+test('長押し中はバーを出し、単位の文字は出さない', async () => {
+  const { dayImage } = await import('../com.kanade0525.daycount.sdPlugin/bin/draw.js');
+  const holding = dayImage({ days: 127, state: 'since', label: '無事故', holding: 0.5 });
+  assert.match(holding, /y="66"/, 'バーが出る');
+  assert.ok(!holding.includes('>無事故<'), 'バーと単位が重ならない');
+
+  const normal = dayImage({ days: 127, state: 'since', label: '無事故', holding: 0 });
+  assert.match(normal, />無事故</);
+  assert.ok(!/y="66"/.test(normal));
+});
+
+test('数え方に合わない日付の絵が壊れていない', async () => {
+  const { dayImage } = await import('../com.kanade0525.daycount.sdPlugin/bin/draw.js');
+  const svg = dayImage({ state: 'wrong' });
+  assert.match(svg, /^<svg /);
+  assert.match(svg, /<\/svg>$/);
+  assert.match(svg, />check the date</);
+});

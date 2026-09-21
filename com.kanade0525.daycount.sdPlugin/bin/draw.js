@@ -40,6 +40,7 @@ const fitName = (raw) => {
  * @param {string} v.state   future / near / today / past / since / unset
  * @param {string} v.label   単位の文字（DAYS / LEFT / 経過 など）
  * @param {string} [v.name]  表示名
+ * @param {number} [v.holding] 長押しの進み具合（0〜1）。0 なら出さない
  */
 export const dayImage = (v) => {
   const skin = SKIN[v.state] ?? SKIN.future;
@@ -79,8 +80,10 @@ export const dayImage = (v) => {
         font-size="${name.size}" font-weight="600" fill="${skin.accent}">${esc(name.text)}</text>` : ''}
   <text x="36" y="${y.toFixed(1)}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
         font-size="${size}" font-weight="700" fill="${INK}">${text}</text>
-  <text x="36" y="64" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
-        font-size="9" font-weight="600" letter-spacing="0.5" fill="${MUTED}">${esc(v.label)}</text>
+  ${v.holding > 0 ? `<rect x="8" y="66" width="56" height="4" rx="2" fill="#2a323a"/>
+  <rect x="8" y="66" width="${(56 * Math.min(1, v.holding)).toFixed(1)}" height="4" rx="2" fill="#ff8f6b"/>`
+  : `<text x="36" y="64" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="9" font-weight="600" letter-spacing="0.5" fill="${MUTED}">${esc(v.label)}</text>`}
 </svg>`;
 };
 

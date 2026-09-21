@@ -41,6 +41,12 @@
   </select>
 </div>
 
+<div class="field" id="resetField">
+  <label><input type="checkbox" id="resetOnHold" style="width:auto;margin-right:6px">
+    Hold the key for two seconds to start again from today</label>
+  <div class="hint">For a board like days-without-an-incident: when one happens, hold the key and the count starts over. A short press never does anything.</div>
+</div>
+
 <div class="field" id="holidayField">
   <label><input type="checkbox" id="skipHolidays" style="width:auto;margin-right:6px">
     Also skip Japanese public holidays</label>
@@ -64,7 +70,7 @@
   // <input type="date"> のネイティブなカレンダーは、この設定画面が載っている
   // WebView（Qt）で Stream Deck アプリごと落とすため使わない。
   const DEFAULTS = { date: '', name: '', label: '', nearWithin: 7,
-                     count: 'calendar', skipHolidays: false };
+                     count: 'calendar', skipHolidays: false, resetOnHold: true };
   let ws = null, uuid = null, settings = { ...DEFAULTS }, isUntil = true;
 
   const $ = (id) => document.getElementById(id);
@@ -177,6 +183,9 @@
   $('skipHolidays').addEventListener('change', (e) => {
     settings.skipHolidays = e.target.checked; save();
   });
+  $('resetOnHold').addEventListener('change', (e) => {
+    settings.resetOnHold = e.target.checked; save();
+  });
 
   window.connectElgatoStreamDeckSocket = (port, piUUID, registerEvent, info, actionInfo) => {
     uuid = piUUID;
@@ -185,6 +194,9 @@
       settings = { ...DEFAULTS, ...(parsed.payload?.settings ?? {}) };
       isUntil = String(parsed.action ?? '').endsWith('.until');
     } catch {}
+
+    // 数え直しは「から数える」キーにしか意味が無い
+    if (isUntil) $('resetField').style.display = 'none';
 
     if (!isUntil) {   // 「から」には期限という概念が無い
       $('nearField').style.display = 'none';
@@ -216,6 +228,7 @@
       for (const f of ['name', 'label', 'nearWithin']) $(f).value = settings[f] ?? DEFAULTS[f];
       $('count').value = settings.count ?? DEFAULTS.count;
       $('skipHolidays').checked = Boolean(settings.skipHolidays);
+      $('resetOnHold').checked = settings.resetOnHold !== false;
       syncCount();
       preview();
       save();

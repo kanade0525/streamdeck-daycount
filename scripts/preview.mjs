@@ -20,6 +20,9 @@ const cases = [
   ['長い名前', { days: 7, state: 'near', label: 'DAYS LEFT', name: 'very-long-label' }],
   ['4桁', { days: 1000, state: 'since', label: 'DAYS' }],
   ['5桁', { days: 10000, state: 'since', label: 'DAYS' }],
+  ['日付が合わない', { state: 'wrong' }],
+  ['長押し中', { days: 127, state: 'since', label: '無事故', name: '第二工場', holding: 0.55 }],
+  ['長押し完了直前', { days: 127, state: 'since', label: '無事故', name: '第二工場', holding: 0.95 }],
 ];
 
 const tiles = cases.map(([name, v]) => `<div class="t">
