@@ -39,6 +39,36 @@ export const parseDate = (text) => {
 
 export const MODE = { until: 'until', since: 'since' };
 
+/** 数え方。暦の日数か、営業日か */
+export const COUNT = { calendar: 'calendar', business: 'business' };
+
+/**
+ * 2つの日付の間の営業日数。土日と、指定があれば祝日を飛ばす。
+ *
+ * 数えるのは「あと何営業日あるか」なので、**始まりの日は含めず、終わりの日は含める**。
+ * 明日が営業日なら「あと1営業日」。今日は、もう来てしまっているので数えない。
+ *
+ * @param {(d: Date) => boolean} isHoliday 祝日かどうか。飛ばさないなら () => false
+ */
+export const businessDaysBetween = (from, to, isHoliday = () => false) => {
+  const a = startOfDay(from);
+  const b = startOfDay(to);
+  if (a.getTime() === b.getTime()) return 0;
+
+  const forward = b > a;
+  const cursor = new Date(a);
+  let count = 0;
+  // 1日ずつ進める。日数は多くても数千なので、これで足りる
+  while (cursor.getTime() !== b.getTime()) {
+    cursor.setDate(cursor.getDate() + (forward ? 1 : -1));
+    const day = cursor.getDay();
+    if (day === 0 || day === 6) continue;
+    if (isHoliday(cursor)) continue;
+    count += 1;
+  }
+  return forward ? count : -count;
+};
+
 /**
  * 表示する数と状態を決める。
  * @param {object} opts
@@ -48,16 +78,21 @@ export const MODE = { until: 'until', since: 'since' };
  * @returns {{days: number, state: string}}
  *   state は today / future / past のいずれか。描画はこれで色を変える
  */
-export const countFor = ({ target, mode = MODE.until, now = Date.now() }) => {
-  const diff = daysBetween(now, target);   // 未来なら正
-  if (diff === 0) return { days: 0, state: 'today' };
+export const countFor = ({ target, mode = MODE.until, now = Date.now(), count = COUNT.calendar, isHoliday }) => {
+  // 状態（今日か・未来か・過去か）は暦で決める。営業日の数え方に関わらず、
+  // 「今日が当日かどうか」は暦の話だから
+  const calendar = daysBetween(now, target);
+  const diff = count === COUNT.business
+    ? businessDaysBetween(now, target, isHoliday)
+    : calendar;
 
+  if (calendar === 0) return { days: 0, state: 'today' };
   if (mode === MODE.until) {
     // まだ来ていなければ残り日数、過ぎていたら「過ぎた」
-    return diff > 0 ? { days: diff, state: 'future' } : { days: -diff, state: 'past' };
+    return calendar > 0 ? { days: diff, state: 'future' } : { days: -diff, state: 'past' };
   }
   // since は、過ぎた日付からの経過日数。まだ来ていなければ「これから」
-  return diff < 0 ? { days: -diff, state: 'past' } : { days: diff, state: 'future' };
+  return calendar < 0 ? { days: -diff, state: 'past' } : { days: diff, state: 'future' };
 };
 
 /**

@@ -32,6 +32,20 @@
   <div class="hint">Shown above the number. Leave it empty for just the number.</div>
 </div>
 
+<div class="field">
+  <label for="count">Count</label>
+  <select id="count">
+    <option value="calendar">Every day</option>
+    <option value="business">Work days only (skip weekends)</option>
+  </select>
+</div>
+
+<div class="field" id="holidayField">
+  <label><input type="checkbox" id="skipHolidays" style="width:auto;margin-right:6px">
+    Also skip Japanese public holidays</label>
+  <div class="hint">Worked out on this machine. Nothing is downloaded.</div>
+</div>
+
 <div class="row">
   <div class="field">
     <label for="label">Unit text <span style="color:#6b737b">(optional)</span></label>
@@ -48,7 +62,8 @@
   // 日付は3つの選択で入れる。
   // <input type="date"> のネイティブなカレンダーは、この設定画面が載っている
   // WebView（Qt）で Stream Deck アプリごと落とすため使わない。
-  const DEFAULTS = { date: '', name: '', label: '', nearWithin: 7 };
+  const DEFAULTS = { date: '', name: '', label: '', nearWithin: 7,
+                     count: 'calendar', skipHolidays: false };
   let ws = null, uuid = null, settings = { ...DEFAULTS }, isUntil = true;
 
   const $ = (id) => document.getElementById(id);
@@ -123,6 +138,17 @@
     });
   }
 
+  // 祝日の欄は、営業日で数えるときだけ意味がある
+  const syncCount = () => {
+    $('holidayField').style.display = settings.count === 'business' ? 'block' : 'none';
+  };
+  $('count').addEventListener('change', (e) => {
+    settings.count = e.target.value; syncCount(); save();
+  });
+  $('skipHolidays').addEventListener('change', (e) => {
+    settings.skipHolidays = e.target.checked; save();
+  });
+
   window.connectElgatoStreamDeckSocket = (port, piUUID, registerEvent, info, actionInfo) => {
     uuid = piUUID;
     try {
@@ -152,6 +178,9 @@
     ws.onopen = () => {
       ws.send(JSON.stringify({ event: registerEvent, uuid: piUUID }));
       for (const f of ['name', 'label', 'nearWithin']) $(f).value = settings[f] ?? DEFAULTS[f];
+      $('count').value = settings.count ?? DEFAULTS.count;
+      $('skipHolidays').checked = Boolean(settings.skipHolidays);
+      syncCount();
       preview();
       save();
     };

@@ -5,7 +5,9 @@
 // 絵が変わらなければ送らないので、CPU は平常値のまま。
 
 import streamDeck, { SingletonAction } from '@elgato/streamdeck';
-import { parseDate, countFor, isNear, MODE } from './daycount.js';
+import { parseDate, countFor, isNear, MODE, COUNT } from './daycount.js';
+import { isHolidayJP } from './holidays-jp.js';
+import { labelFor } from './labels.js';
 import { dayImage, dataUri } from './draw.js';
 import { RateLimiter } from './rate-limit.js';
 
@@ -15,26 +17,27 @@ const TICK_MS = 60_000;   // 1分ごとに確かめる
 const DEFAULTS = {
   date: '',
   name: '',
-  label: '',          // 空なら状態に応じて決める
-  nearWithin: 7,      // 何日前から色を変えるか（まで、のみ）
+  label: '',            // 空なら状態に応じて決める
+  nearWithin: 7,        // 何日前から色を変えるか（まで、のみ）
+  count: COUNT.calendar,// 暦の日数か、営業日か
+  skipHolidays: false,  // 営業日のとき、日本の祝日も飛ばすか
 };
 
 /** キーごとの設定と、最後に送った絵。絵が変わらなければ送らない */
 const keys = new Map();   // action.id -> {action, settings, mode, limiter, lastSvg}
-
-const labelFor = (state, mode, custom) => {
-  if (custom) return custom;
-  if (state === 'today') return 'TODAY';
-  if (mode === MODE.until) return state === 'past' ? 'DAYS AGO' : 'DAYS LEFT';
-  return state === 'future' ? 'DAYS LEFT' : 'DAYS';
-};
 
 const render = (entry) => {
   const s = entry.settings;
   const target = parseDate(s.date);
   if (target === null) return dayImage({ state: 'unset' });
 
-  const count = countFor({ target, mode: entry.mode });
+  const counting = s.count === COUNT.business ? COUNT.business : COUNT.calendar;
+  const count = countFor({
+    target,
+    mode: entry.mode,
+    count: counting,
+    isHoliday: s.skipHolidays ? isHolidayJP : undefined,
+  });
   const near = isNear(count, entry.mode, Number(s.nearWithin) || DEFAULTS.nearWithin);
 
   // 経過を数えている時は、過ぎていることが普通なので灰色にしない
@@ -45,7 +48,7 @@ const render = (entry) => {
   return dayImage({
     days: count.days,
     state,
-    label: labelFor(count.state, entry.mode, s.label),
+    label: labelFor(count.state, entry.mode, s.label, counting),
     name: s.name,
   });
 };
