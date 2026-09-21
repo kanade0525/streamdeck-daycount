@@ -1,0 +1,38 @@
+name: 配布物
+
+# v1.2.3 の形の印を押すと、その時点の中身から .streamDeckPlugin を組み立てて
+# Release に添える。
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: 同梱する依存を入れる
+        run: npm install --omit=dev
+        working-directory: com.kanade0525.daycount.sdPlugin
+
+      - name: 検査
+        run: npm test
+
+      - name: 固める
+        run: npx --yes @elgato/cli@latest pack com.kanade0525.daycount.sdPlugin --output . --force
+
+      - name: Release に添える
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            com.kanade0525.daycount.streamDeckPlugin \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

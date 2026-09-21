@@ -1,0 +1,41 @@
+{
+  "SDKVersion": 3,
+  "UUID": "com.kanade0525.daycount",
+  "Name": "Day Count",
+  "Version": "0.1.0.0",
+  "Author": "kanade ishida",
+  "Description": "Counts the days to a date you choose, or the days since one. Set a date and the key does the rest.",
+  "Category": "Day Count",
+  "CategoryIcon": "imgs/category",
+  "Icon": "imgs/plugin",
+  "URL": "https://github.com/kanade0525/streamdeck-daycount",
+  "CodePath": "bin/plugin.js",
+  "Nodejs": { "Version": "20" },
+  "Software": { "MinimumVersion": "6.9" },
+  "OS": [
+    { "Platform": "mac", "MinimumVersion": "12" },
+    { "Platform": "windows", "MinimumVersion": "10" }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.kanade0525.daycount.until",
+      "Name": "Days until",
+      "Icon": "imgs/action",
+      "Tooltip": "Counts down the days to a date you choose.",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "PropertyInspectorPath": "ui/day.html",
+      "States": [{ "Image": "imgs/key", "TitleAlignment": "middle" }]
+    },
+    {
+      "UUID": "com.kanade0525.daycount.since",
+      "Name": "Days since",
+      "Icon": "imgs/action",
+      "Tooltip": "Counts the days since a date you choose.",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "PropertyInspectorPath": "ui/day.html",
+      "States": [{ "Image": "imgs/key", "TitleAlignment": "middle" }]
+    }
+  ]
+}

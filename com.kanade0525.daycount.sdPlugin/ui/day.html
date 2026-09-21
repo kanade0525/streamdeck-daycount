@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Day Count</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:14px 16px; background:#2d2d2d; color:#d8d8d8;
+         font:13px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .field { margin-bottom:13px; }
+  .row { display:flex; gap:12px; }
+  .row .field { flex:1; }
+  label { display:block; margin-bottom:4px; color:#9aa4ae; font-size:12px; }
+  input { width:100%; box-sizing:border-box; padding:6px 8px; background:#3d3d3d;
+          color:#e8e8e8; border:1px solid #4a4a4a; border-radius:4px; font:inherit; }
+  input:focus { outline:none; border-color:#77a8d9; }
+  .hint { color:#7d868f; font-size:11px; margin-top:5px; }
+  .result { margin-top:6px; font-size:12px; }
+  .ok { color:#7fc99b; }
+  .bad { color:#e08b84; }
+</style>
+
+<div class="field">
+  <label for="date">Date</label>
+  <input id="date" type="date">
+  <div class="result" id="result"></div>
+</div>
+
+<div class="field">
+  <label for="name">Label on the key <span style="color:#6b737b">(optional)</span></label>
+  <input id="name" maxlength="14" placeholder="">
+  <div class="hint">Shown above the number. Leave it empty for just the number.</div>
+</div>
+
+<div class="row">
+  <div class="field">
+    <label for="label">Unit text <span style="color:#6b737b">(optional)</span></label>
+    <input id="label" maxlength="12" placeholder="DAYS LEFT">
+  </div>
+  <div class="field" id="nearField">
+    <label for="nearWithin">Warn within (days)</label>
+    <input id="nearWithin" type="number" min="0" max="365" step="1">
+  </div>
+</div>
+<div class="hint" id="nearHint">The key turns amber once the date is this close.</div>
+
+<script>
+  const DEFAULTS = { date: '', name: '', label: '', nearWithin: 7 };
+  let ws = null, uuid = null, settings = { ...DEFAULTS }, isUntil = true;
+
+  const save = () => {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ event: 'setSettings', context: uuid, payload: settings }));
+    }
+  };
+
+  // 入れた日付が何日になるかを、その場で出す。保存する前に確かめられる
+  const preview = () => {
+    const el = document.getElementById('result');
+    const m = String(settings.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) { el.textContent = ''; el.className = 'result'; return; }
+    const [, y, mo, d] = m.map(Number);
+    const target = new Date(y, mo - 1, d, 12);
+    const today = new Date(); today.setHours(12, 0, 0, 0);
+    const diff = Math.round((target - today) / 86400000);
+    if (diff === 0) { el.textContent = 'That is today.'; el.className = 'result ok'; return; }
+    if (isUntil) {
+      el.textContent = diff > 0 ? `${diff} days left.` : `${-diff} days ago.`;
+    } else {
+      el.textContent = diff < 0 ? `${-diff} days so far.` : `Starts in ${diff} days.`;
+    }
+    el.className = 'result ok';
+  };
+
+  for (const f of Object.keys(DEFAULTS)) {
+    const el = document.getElementById(f);
+    if (!el) continue;
+    el.addEventListener('input', (e) => {
+      settings[f] = el.type === 'number' ? Number(e.target.value) : e.target.value;
+      if (f === 'date') preview();
+      save();
+    });
+  }
+
+  window.connectElgatoStreamDeckSocket = (port, piUUID, registerEvent, info, actionInfo) => {
+    uuid = piUUID;
+    try {
+      const parsed = JSON.parse(actionInfo);
+      settings = { ...DEFAULTS, ...(parsed.payload?.settings ?? {}) };
+      isUntil = String(parsed.action ?? '').endsWith('.until');
+    } catch {}
+    // 「から」には期限という概念が無いので、その欄は出さない
+    if (!isUntil) {
+      document.getElementById('nearField').style.display = 'none';
+      document.getElementById('nearHint').style.display = 'none';
+      document.getElementById('label').placeholder = 'DAYS';
+    }
+    ws = new WebSocket('ws://127.0.0.1:' + port);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ event: registerEvent, uuid: piUUID }));
+      for (const f of Object.keys(DEFAULTS)) {
+        const el = document.getElementById(f);
+        if (el) el.value = settings[f] ?? DEFAULTS[f];
+      }
+      preview();
+    };
+  };
+</script>
