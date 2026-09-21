@@ -101,3 +101,18 @@ export const countFor = ({ target, mode = MODE.until, now = Date.now(), count = 
  */
 export const isNear = (count, mode, withinDays) =>
   mode === MODE.until && count.state === 'future' && count.days <= withinDays;
+
+/**
+ * その日付が、その数え方に合っているか。
+ *
+ * until（まで）は未来の日付、since（から）は過ぎた日付を数えるもの。
+ * 逆を入れても数は出せてしまうが、意味が通らない
+ * （無事故のキーに「あと100日」と出るなど）。
+ * 設定画面では選べないようにしてあるが、古い設定が残っている場合もあるので
+ * ここでも確かめる。
+ */
+export const isSensible = (target, mode, now = Date.now()) => {
+  const diff = daysBetween(now, target);
+  if (diff === 0) return true;                     // 当日はどちらでも意味が通る
+  return mode === MODE.until ? diff > 0 : diff < 0;
+};

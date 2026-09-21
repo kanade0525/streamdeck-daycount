@@ -24,6 +24,7 @@
     <div class="field"><select id="d"></select></div>
   </div>
   <div class="result" id="result"></div>
+  <div class="hint" id="rangeHint"></div>
 </div>
 
 <div class="field">
@@ -78,16 +79,40 @@
   /** その年月の日数。うるう年も見る */
   const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
 
+  /** その日付が選べるか。境目は今日 */
+  const allowed = (y, m, d) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const target = new Date(y, m - 1, d);
+    return isUntil ? target >= today : target <= today;
+  };
+
+  /** 月の選択肢を、選べる範囲だけにする */
+  const fillMonths = () => {
+    const y = Number($('y').value);
+    const keep = Number($('m').value) || 1;
+    $('m').innerHTML = '';
+    for (let m = 1; m <= 12; m += 1) {
+      // その月に1日でも選べる日があれば出す
+      const last = daysInMonth(y, m);
+      if (!allowed(y, m, isUntil ? last : 1)) continue;
+      $('m').insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`);
+    }
+    const options = [...$('m').options].map((o) => Number(o.value));
+    $('m').value = String(options.includes(keep) ? keep : options[isUntil ? 0 : options.length - 1]);
+  };
+
   const fillDays = () => {
     const y = Number($('y').value), m = Number($('m').value);
     const max = daysInMonth(y, m);
     const keep = Number($('d').value) || 1;
     $('d').innerHTML = '';
     for (let i = 1; i <= max; i += 1) {
-      $('d').insertAdjacentHTML('beforeend',
-        `<option value="${i}">${i}</option>`);
+      if (!allowed(y, m, i)) continue;   // 選べない日は出さない
+      $('d').insertAdjacentHTML('beforeend', `<option value="${i}">${i}</option>`);
     }
-    $('d').value = String(Math.min(keep, max));   // 31日→2月で溢れないように詰める
+    const options = [...$('d').options].map((o) => Number(o.value));
+    if (options.length === 0) return;
+    $('d').value = String(options.includes(keep) ? keep : options[isUntil ? 0 : options.length - 1]);
   };
 
   const syncFromInputs = () => {
@@ -113,7 +138,11 @@
   const buildSelects = () => {
     const now = new Date();
     const thisYear = now.getFullYear();
-    for (let y = thisYear - 20; y <= thisYear + 20; y += 1) {
+    // 「から数える」に未来の日付は意味が無いので、そもそも選べないようにする。
+    // 入れられてしまうと、画面に出す言葉で誤魔化すことになる
+    const from = isUntil ? thisYear : thisYear - 40;
+    const to = isUntil ? thisYear + 40 : thisYear;
+    for (let y = from; y <= to; y += 1) {
       $('y').insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
     }
     const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -121,14 +150,14 @@
       $('m').insertAdjacentHTML('beforeend', `<option value="${i + 1}">${label}</option>`);
     });
     $('y').value = String(thisYear);
+    fillMonths();
     $('m').value = String(now.getMonth() + 1);
     fillDays();
     $('d').value = String(now.getDate());
   };
 
-  for (const id of ['y', 'm']) {
-    $(id).addEventListener('change', () => { fillDays(); syncFromInputs(); });
-  }
+  $('y').addEventListener('change', () => { fillMonths(); fillDays(); syncFromInputs(); });
+  $('m').addEventListener('change', () => { fillDays(); syncFromInputs(); });
   $('d').addEventListener('change', syncFromInputs);
 
   for (const f of ['name', 'label', 'nearWithin']) {
@@ -161,15 +190,22 @@
       $('nearField').style.display = 'none';
       $('nearHint').style.display = 'none';
       $('label').placeholder = 'DAYS';
+      $('rangeHint').textContent = 'Days since counts up from a date that has already passed, so only today and earlier can be picked.';
+    } else {
+      $('rangeHint').textContent = 'Days until counts down to a date ahead, so only today and later can be picked.';
     }
 
     buildSelects();
     const saved = String(settings.date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (saved) {
       $('y').value = String(Number(saved[1]));
+      fillMonths();
       $('m').value = String(Number(saved[2]));
       fillDays();
       $('d').value = String(Number(saved[3]));
+      // 保存されていた日付が選べる範囲の外なら（作り直す前に入れたものなど）、
+      // 選択の内容に合わせて保存し直す
+      syncFromInputs();
     } else {
       syncFromInputs();   // 未設定なら今日を入れておく。空のまま閉じられるより親切
     }

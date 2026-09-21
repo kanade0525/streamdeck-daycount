@@ -15,6 +15,7 @@ const SKIN = {
   past:   { accent: '#8a949e', ground: BG },          // 過ぎた
   since:  { accent: '#57d08a', ground: BG },          // 経過を数えている
   unset:  { accent: '#3a444e', ground: BG },          // 未設定
+  wrong:  { accent: '#d8a45e', ground: BG },          // 数え方に合わない日付
 };
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -43,6 +44,18 @@ const fitName = (raw) => {
 export const dayImage = (v) => {
   const skin = SKIN[v.state] ?? SKIN.future;
   const name = fitName(v.name);
+
+  if (v.state === 'wrong') {
+    // 数え方に合わない日付。それらしい数を出すより、直してもらう方がいい
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <rect width="72" height="72" rx="10" fill="${BG}"/>
+  <path d="M36 20 L50 46 H22 Z" fill="none" stroke="${skin.accent}" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="35" y="29" width="2" height="9" rx="1" fill="${skin.accent}"/>
+  <rect x="35" y="40" width="2" height="2.6" rx="1" fill="${skin.accent}"/>
+  <text x="36" y="63" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="8" fill="${MUTED}">check the date</text>
+</svg>`;
+  }
 
   if (v.state === 'unset') {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">

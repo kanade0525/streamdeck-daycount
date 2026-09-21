@@ -5,7 +5,7 @@
 // 絵が変わらなければ送らないので、CPU は平常値のまま。
 
 import streamDeck, { SingletonAction } from '@elgato/streamdeck';
-import { parseDate, countFor, isNear, MODE, COUNT } from './daycount.js';
+import { parseDate, countFor, isNear, isSensible, MODE, COUNT } from './daycount.js';
 import { isHolidayJP } from './holidays-jp.js';
 import { labelFor } from './labels.js';
 import { dayImage, dataUri } from './draw.js';
@@ -30,6 +30,10 @@ const render = (entry) => {
   const s = entry.settings;
   const target = parseDate(s.date);
   if (target === null) return dayImage({ state: 'unset' });
+
+  // 数え方に合わない日付（から数えるキーに未来の日付など）は、
+  // それらしい数を出さずに、直してもらう
+  if (!isSensible(target, entry.mode)) return dayImage({ state: 'wrong' });
 
   const counting = s.count === COUNT.business ? COUNT.business : COUNT.calendar;
   const count = countFor({

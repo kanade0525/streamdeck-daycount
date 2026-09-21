@@ -118,3 +118,26 @@ test('startOfDay は時刻を落とす', () => {
   assert.equal(d.getHours(), 0);
   assert.equal(d.getDate(), 1);
 });
+
+// ---- 数え方に合わない日付 ----
+// 「から数える」キーに未来の日付を入れても、それらしい数を出してはいけない
+
+test('まで数えるキーには、未来の日付が合う', async () => {
+  const { isSensible } = await import('../com.kanade0525.daycount.sdPlugin/bin/daycount.js');
+  assert.equal(isSensible(at(2026, 3, 10), MODE.until, at(2026, 3, 1)), true);
+  assert.equal(isSensible(at(2026, 3, 1), MODE.until, at(2026, 3, 10)), false, '過ぎた日付は合わない');
+});
+
+test('から数えるキーには、過ぎた日付が合う', async () => {
+  const { isSensible } = await import('../com.kanade0525.daycount.sdPlugin/bin/daycount.js');
+  assert.equal(isSensible(at(2026, 3, 1), MODE.since, at(2026, 3, 10)), true);
+  assert.equal(isSensible(at(2026, 3, 10), MODE.since, at(2026, 3, 1)), false,
+    '無事故のキーに未来の日付は合わない');
+});
+
+test('当日はどちらでも合う', async () => {
+  const { isSensible } = await import('../com.kanade0525.daycount.sdPlugin/bin/daycount.js');
+  for (const mode of [MODE.until, MODE.since]) {
+    assert.equal(isSensible(at(2026, 3, 1), mode, at(2026, 3, 1, 18)), true);
+  }
+});
