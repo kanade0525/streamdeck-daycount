@@ -26,12 +26,12 @@ https://maker.elgato.com → Home → **Create product**
 | Type | Stream Deck Plugin |
 | File | `com.kanade0525.daycount.streamDeckPlugin` |
 | Name | `Day Count` |
-| Description | **`docs/description-en.md` をそのまま貼る**（2,221字） |
+| Description | **`docs/description-en.md` をそのまま貼る**（2,819字） |
 | Price | **Free** |
 | Icon | `media/icon-512.png` |
 | Thumbnail | `media/thumbnail.png` |
-| Gallery | `media/gallery-1-two-ways.png` 〜 `gallery-4-quiet.png`（4点。最低3点） |
-| Tags | `countdown` `date` `productivity` `timer` `mac` |
+| Gallery | `media/gallery-1-two-ways.png` 〜 `gallery-5-quiet.png`（5点。最低3点） |
+| Tags | `countdown` `date` `productivity` `workdays` `mac` |
 | Support | `https://github.com/kanade0525/streamdeck-daycount/issues` |
 | DRM protection | **Yes**（必須） |
 | Release notes | 下記 |
@@ -50,6 +50,11 @@ First release.
 Put a date on a key and it keeps the number for you. Days until the date, or
 days since it — a release, a renewal, a run of days without an incident.
 
+- Count every day, or work days only. Weekends, and Japanese public holidays
+  too if you want them skipped. Holidays are worked out on your machine, so
+  nothing is downloaded and no list goes stale
+- Hold a Days since key for two seconds and the count starts over from today,
+  for a board like days-without-an-incident
 - Blue while the date is far off, amber as it gets close, green on the day
 - Your own label above the number and your own wording underneath
 - Whole calendar days, so leap years and daylight saving never shift the count
@@ -71,13 +76,14 @@ Server Watch で一度落ちている。同じ指摘が来る可能性がある�
 デモを撮るなら、この流れが短い。
 
 1. キーに **Days until** を置く（未設定の絵が出ている）
-2. 設定画面で日付を入れる → **その場で「◯日後です」と出る**
+2. 設定画面で日付を選ぶ → **その場で「◯日後です」と出る**
 3. キーが青くなって日数が出る
-4. 近い日付に変える → 琥珀色になる
+4. 数え方を Work days only に変える → **数が減り、単位が WORK DAYS LEFT になる**
 5. **Days since** を置いて、過去の日付を入れる → 経過日数が出る
+6. **そのキーを2秒長押し** → バーが伸びて 0 に戻る
 
-**2 を必ず入れる。** 設定した瞬間に結果が見えるのはこの道具の芯で、
-既存の有料プラグインには無い。
+**2・4・6 を必ず入れる。** 設定した瞬間に結果が見えること、営業日で数えられること、
+長押しで数え直せることは、いずれも既存の有料プラグインに無い。
 
 ---
 

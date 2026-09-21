@@ -95,7 +95,41 @@ const colours = page(`
   </div>
 </div></div>`);
 
-// ---- 4. 使いどころ ----
+// ---- 4. 営業日 ----
+const workdays = page(`
+<div class="stage"><div class="inner">
+  <h2>Count work days, not every day</h2>
+  <p style="margin-top:20px">Skip weekends, and Japanese public holidays too. The holidays are worked out on your machine — nothing is downloaded, and no list goes stale.</p>
+  <div class="row" style="gap:90px;margin-top:80px;justify-content:center">
+    <div style="text-align:center">
+      ${key({ days: 29, state: 'future', label: 'DAYS LEFT', name: 'Deadline' }, 240)}
+      <div class="cap">Every day</div>
+    </div>
+    <div style="text-align:center">
+      ${key({ days: 18, state: 'future', label: 'WORK DAYS LEFT', name: 'Deadline' }, 240)}
+      <div class="cap">Work days only — the same deadline</div>
+    </div>
+  </div>
+</div></div>`);
+
+// ---- 5. 長押しで数え直す ----
+const reset = page(`
+<div class="stage"><div class="inner row" style="gap:120px">
+  <div class="row" style="gap:30px;flex-shrink:0">
+    ${key({ days: 127, state: 'since', label: 'NO INCIDENT', name: 'Line 2' }, 210)}
+    ${key({ days: 127, state: 'since', label: 'NO INCIDENT', name: 'Line 2', holding: 0.7 }, 210)}
+    ${key({ days: 0, state: 'today', label: 'TODAY', name: 'Line 2' }, 210)}
+  </div>
+  <div>
+    <h2>Start again from today</h2>
+    <p style="margin-top:24px;max-width:560px">
+      Hold a Days since key for two seconds and the count starts over. A bar fills while you
+      hold, so letting go cancels it, and a short press never does anything.
+    </p>
+  </div>
+</div></div>`);
+
+// ---- 6. 使いどころ ----
 const uses = page(`
 <div class="stage"><div class="inner">
   <h2>What people count</h2>
@@ -130,16 +164,18 @@ const quiet = page(`
 </div></div>`);
 
 // ---- 書き出し ----
-rmSync(TMP, { recursive: true, force: true });
+// 画像の名前を変えたとき、前回のものが残ると混ざる。毎回まっさらにする
+rmSync(OUT, { recursive: true, force: true });
 mkdirSync(TMP, { recursive: true });
 mkdirSync(OUT, { recursive: true });
 
 const pages = [
   ['thumbnail', thumbnail],
   ['gallery-1-two-ways', twoWays],
-  ['gallery-2-colours', colours],
-  ['gallery-3-uses', uses],
-  ['gallery-4-quiet', quiet],
+  ['gallery-2-workdays', workdays],
+  ['gallery-3-reset', reset],
+  ['gallery-4-uses', uses],
+  ['gallery-5-quiet', quiet],
 ];
 
 for (const [name, html] of pages) {
